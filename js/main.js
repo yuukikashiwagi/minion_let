@@ -111,7 +111,31 @@ const textureloader = new TextureLoader();
 const glbloader = new GLTFLoader();
 
 // プレイヤーの描画
-// ここに記述
+glbloader.load(
+  glbUrls[0],
+  function (gltf) {
+    player = gltf.scene;
+    player.scale.set(3, 2, 3);
+    player.rotation.set(0, Math.PI, 0);
+    player.position.set(0, 0, 0);
+
+    mixer = new AnimationMixer(player); // 解説 1
+    const runningAction = gltf.animations.find(
+      (animation) => animation.name === "running"
+    ); // 解説 2
+    if (runningAction) {
+      mixer.clipAction(runningAction).play(); // 解説 3
+    } else {
+      console.warn("Running animation not found in the model.");
+    }
+
+    scene.add(player);
+  },
+  undefined,
+  function (error) {
+    console.error(error);
+  }
+);
 
 // 建物の描画
 glbloader.load(
@@ -139,7 +163,7 @@ glbloader.load(
 for (let g = 1; g < 12; g++) {
   geometry = new ConeGeometry(1, 4, 32);
   sphereMaterial = new MeshPhongMaterial({ color: 0xff0000 });
-  const model = new Mesh(groundGeometry, sphereMaterial);
+  const model = new Mesh(geometry, sphereMaterial);
   const randomIndex = Math.floor(Math.random() * 3);
   model.position.set(course[randomIndex], 2, -15 * (g + 1));
   enemy_list.push(model);
@@ -153,7 +177,7 @@ textureloader.load(
     geometry = new BoxGeometry(24, 0.5, 400);
     sphereMaterial = new MeshPhongMaterial();
     sphereMaterial.map = texture;
-    const ground = new Mesh(groundGeometry, sphereMaterial);
+    const ground = new Mesh(geometry, sphereMaterial);
     ground.position.set(0, -0.3, -180);
     ground.receiveShadow = true;
     scene.add(ground);
@@ -165,7 +189,23 @@ textureloader.load(
 );
 
 // ゴールの描画
-// ここに記述
+textureloader.load(
+  textureUrls[1],
+  function (texture) {
+    geometry = new BoxGeometry(24, 10, 0.5); // 地面のジオメトリを作成 (BoxGeometry)
+    sphereMaterial = new MeshPhongMaterial();
+    sphereMaterial.map = texture;
+    goal = new Mesh(geometry, sphereMaterial); // メッシュを作成 (ジオメトリ + マテリアル)
+    goal.position.set(0, 5, -200);
+    goalBoundingBox = new Box3().setFromObject(goal);
+    // ground.receiveShadow = true; // 影を受け取る設定
+    scene.add(goal);
+  },
+  undefined,
+  function (error) {
+    console.error(error);
+  }
+);
 
 // センサの値の読み取り
 document.addEventListener("DOMContentLoaded", function () {
@@ -174,11 +214,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 加速度センサの値の取得
   if (ios) {
-    // iosの時
-    // ここに追加
+    // iOS の時
+    window.addEventListener("devicemotion", (dat) => {
+      aX = dat.accelerationIncludingGravity.x || 0;
+      aY = dat.accelerationIncludingGravity.y || 0;
+      aZ = dat.accelerationIncludingGravity.z || 0;
+    });
   } else {
-    // androidの時
-    // ここに追加
+    // android の時
+    window.addEventListener("devicemotion", (dat) => {
+      aX = -dat.accelerationIncludingGravity.x || 0;
+      aY = -dat.accelerationIncludingGravity.y || 0;
+      aZ = -dat.accelerationIncludingGravity.z || 0;
+    });
   }
 
   // 一度だけ実行
@@ -188,11 +236,20 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ジャイロセンサの値の取得
-  // ここに追加
+  window.addEventListener(
+    "deviceorientation",
+    (event) => {
+      alpha = event.alpha || 0;
+      beta = event.beta || 0;
+      gamma = event.gamma || 0;
+      console.log("Gyro:", alpha, beta, gamma);
+    },
+    false
+  );
 
   // 一定時間ごとに
   let graphtimer = window.setInterval(() => {
-    // ここに追加
+    displayData();
   }, 33);
 
   // 描画する関数
@@ -222,7 +279,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // プレイヤーの移動
 function move() {
-  // ここに追加
+  // 追加
+  if (gamma > 20) {
+    index += 1;
+    player.position.x = course[index];
+  } else if (gamma < -20) {
+    index -= 1;
+    player.position.x = course[index];
+  }
 }
 
 // プレイヤーのジャンプ
@@ -268,10 +332,12 @@ function animate() {
   const animationId = requestAnimationFrame(animate);
 
   // Mixer
-  // ここに追加
+  if (mixer) {
+    mixer.update(0.01); // delta time（時間の経過量）
+  }
 
   // 移動関数の実行
-  // ここに追加
+  move();
 
   // ジャンプ関数の実行
   // ここに追加
@@ -280,7 +346,10 @@ function animate() {
   // ここに追加
 
   // カメラの移動
-  // ここに追加
+  if (player) {
+    camera.position.set(0, 8, player.position.z + 10);
+    camera.lookAt(new Vector3(0, 5, player.position.z));
+  }
 
   renderer.render(scene, camera);
 }
