@@ -279,20 +279,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // プレイヤーの移動
 function move() {
-  // ...
-  // 変更
-  if (gamma > 20) {
+  player.position.z -= 0.2;
+  if (gamma > 20 && !isMoving) {
     if (index == 0 || index == 1) {
+      isMoving = true;
       index += 1;
       player.position.x = course[index];
     }
-  } else if (gamma < -20) {
+  } else if (gamma < -20 && !isMoving) {
     if (index == 1 || index == 2) {
+      isMoving = true;
       index -= 1;
       player.position.x = course[index];
     }
+  } else if (gamma < 1.5 && gamma > -1.5) {
+    isMoving = false;
   }
 }
+
 // プレイヤーのジャンプ
 function jump() {
   // ここに追加
