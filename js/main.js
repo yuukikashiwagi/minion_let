@@ -1,22 +1,27 @@
 import {
-  Scene,
-  PerspectiveCamera,
-  WebGLRenderer,
-  DirectionalLight,
-  TextureLoader,
   AnimationMixer,
-  ConeGeometry,
-  MeshPhongMaterial,
-  Mesh,
-  BoxGeometry,
   Box3,
-  Vector3,
   Box3Helper,
+  BoxGeometry,
+  ConeGeometry,
+  DirectionalLight,
+  Mesh,
+  MeshPhongMaterial,
+  PerspectiveCamera,
+  Scene,
+  TextureLoader,
+  Vector3,
+  WebGLRenderer
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "loaders";
 
-// 各変数、各定数の宣言
+// オブジェクト
+let model;
+let geometry;
+let sphereMaterial;
+let helper;
+
 // レーンの設定
 let index = 1;
 const course = [-5, 0, 5];
@@ -26,38 +31,35 @@ let mixer;
 // エリアの設定
 const gravity = 0.05; // 重力
 
+// iOS と Android
 let isOnce = false;
 let ios = true;
 
 // プレイヤーの変数定数を宣言
-let geometry;
-let sphereMaterial;
-let model;
-let helper;
 let player;
 let playerBox;
-let playerBoundingBox;
-let goalBoundingBox;
 let player_v_y = 0;
-const initial_velocity = 0.8;
-let isJumping = false;
 let isMoving = false;
-let goal;
-let isGoal = false;
+let isJumping = false;
 let box_X;
 let box_Y;
 let box_Z;
+const initial_velocity = 0.8;
+
+// ゴール
+let goal;
+let goalBoundingBox;
 
 // センサ
-let alpha;
-let beta;
-let gamma;
 let aX;
 let aY;
 let aZ;
+let alpha;
+let beta;
+let gamma;
 
-let phone_list = [];
 let enemy_list = [];
+let phone_list = [];
 
 // シーン
 const scene = new Scene();
@@ -73,7 +75,7 @@ camera.position.set(0, 4, 10);
 // レンダラー
 const renderer = new WebGLRenderer({
   alpha: true,
-  antialias: true,
+  antialias: true
 });
 renderer.shadowMap.enabled = true;
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -97,14 +99,14 @@ function iosOrAndrooid(aX, aY, aZ) {
 // texture 内に保存されている jpg のパス
 const textureUrls = [
   "textures/ground.jpg", // 道
-  "textures/goal.jpg", // ゴール
+  "textures/goal.jpg" // ゴール
 ];
 
 // 読み込む GLB モデルのパス
 const glbUrls = [
   "models/player.glb", // プレイヤー
   "models/houses.glb", // 周りの建物
-  "models/phone.glb", // スマホ
+  "models/phone.glb" // スマホ
 ];
 
 // エリアで用いられる 3D モデルと写真のダウンロード
@@ -341,7 +343,7 @@ function collision() {
   playerBox = new Mesh(geometry, sphereMaterial);
   playerBox.position.set(
     player.position.x,
-    player.position.y + box_Y,
+    player.position.y + box_Y / 2,
     player.position.z
   );
   playerBox.updateWorldMatrix(true, true);
@@ -360,7 +362,6 @@ function collision() {
       return false; // この敵を削除
     }
     return true; // この敵を保持
-
   });
 
   // スマホとの衝突
@@ -374,7 +375,6 @@ function collision() {
       return false; // このスマホを削除
     }
     return true; // このスマホを保持
-    
   });
 
   // ゴールとの衝突
@@ -389,23 +389,22 @@ function collision() {
 
 function animate() {
   const animationId = requestAnimationFrame(animate);
-
   // Mixer
   if (mixer) {
     mixer.update(0.01); // delta time（時間の経過量）
   }
 
-  // 移動関数の実行
   move();
-
-  // ジャンプ関数の実行
-  jump();
-
-  // 衝突判定関数の実行
-  collision();
 
   // カメラの移動
   if (player) {
+    // 移動関数の実行
+    // ジャンプ関数の実行
+    jump();
+
+    // 衝突判定関数の実行
+    collision();
+
     camera.position.set(0, 8, player.position.z + 10);
     camera.lookAt(new Vector3(0, 5, player.position.z));
   }
